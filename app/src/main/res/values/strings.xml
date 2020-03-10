@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Task Manager</string>
+    <string name="action_about">About</string>
+    <string-array name="priority_list">
+        <item>Low Priority</item>
+        <item>Medium Priority</item>
+        <item>High Priority</item>
+    </string-array>
+
+    <string-array name="sort_priority">
+        <item>All</item>
+        <item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
+    </string-array>
+</resources>
