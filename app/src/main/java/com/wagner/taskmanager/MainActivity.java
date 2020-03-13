@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     List<Task> tasks = new ArrayList<>();
 
     private int PRIORITY_FILTER = 0;
-    private boolean COMPLETED_FILTER = true;
+    private boolean STATUS_FILTER = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,16 +63,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Switch mySwitch = (Switch)findViewById(R.id.switch1);
-        mySwitch.setTypeface(ResourcesCompat.getFont(this, R.font.work_sans_light));
-        mySwitch.setChecked(true);
-        mySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
-                COMPLETED_FILTER = isChecked;
-                updateListAfterFilter();
-            }
-        });
 
         tasks.clear();
 
@@ -93,6 +84,20 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        ((Spinner)findViewById(R.id.spinner4)).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                STATUS_FILTER = position == 1;
+                updateListAfterFilter();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                // your code here
+            }
+
+        });
+
         tasks.addAll(AppDatabase.getInstance(this).taskDao().getAll());
         taskAdapter.notifyDataSetChanged();
     }
@@ -100,32 +105,13 @@ public class MainActivity extends AppCompatActivity {
     public  void updateListAfterFilter(){
         tasks.clear();
 
-        Log.e("FILTERTEST","PRIORITY: "+PRIORITY_FILTER+" | HIDE COMPLETED: "+COMPLETED_FILTER);
-
-        if(PRIORITY_FILTER == 0  && !COMPLETED_FILTER)
-        {
-            tasks.addAll(AppDatabase.getInstance(this).taskDao().getAll());
+        if(PRIORITY_FILTER == 0){
+            tasks.addAll(AppDatabase.getInstance(this).taskDao().getAllByState(STATUS_FILTER));
             taskAdapter.notifyDataSetChanged();
             return;
         }
 
-        if(PRIORITY_FILTER == 0 && COMPLETED_FILTER)
-        {
-            tasks.addAll(AppDatabase.getInstance(this).taskDao().getAllByState(false));
-            taskAdapter.notifyDataSetChanged();
-            return;
-        }
-
-        if(PRIORITY_FILTER != 0 && !COMPLETED_FILTER)
-        {
-            tasks.addAll(AppDatabase.getInstance(this).taskDao().getAllByPriority(PRIORITY_FILTER));
-            taskAdapter.notifyDataSetChanged();
-            Log.e("FILTERTEST","Entró!");
-            return;
-        }
-
-        Log.e("FILTERTEST","Entró acá!");
-        tasks.addAll(AppDatabase.getInstance(this).taskDao().getAllByPriorityByState(PRIORITY_FILTER,false));
+        tasks.addAll(AppDatabase.getInstance(this).taskDao().getAllByPriorityByState(PRIORITY_FILTER,STATUS_FILTER));
         taskAdapter.notifyDataSetChanged();
 
     }
@@ -141,8 +127,6 @@ public class MainActivity extends AppCompatActivity {
         int task_id=v.getId();
         CheckBox view=(CheckBox)v;
 
-
-
         if(view.isChecked())
             ((TextView)((View)v.getParent().getParent()).findViewById(R.id.task_title)).setPaintFlags(((TextView)((View)v.getParent().getParent()).findViewById(R.id.task_title)).getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         else
@@ -154,14 +138,13 @@ public class MainActivity extends AppCompatActivity {
             if(t.getId()==task_id) {
                 t.setCompleted(view.isChecked());
                 AppDatabase.getInstance(this).taskDao().updateTask(t);
-                if(view.isChecked() && COMPLETED_FILTER)
-                    hideItem((View)v.getParent().getParent(),i);
+                hideItem((View)v.getParent().getParent(),t);
             }
             i++;
         }
     }
 
-    private void hideItem(final View rowView, final int position) {
+    private void hideItem(final View rowView,  final Task t) {
 
         final Animation anim = AnimationUtils.loadAnimation(getApplicationContext(),
                 android.R.anim.slide_out_right);
@@ -177,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
                 rowView.startAnimation(anim);
                 new Handler().postDelayed(new Runnable() {
                     public void run() {
-                        Task t = tasks.remove(position); //Remove the current content from the array
+                        tasks.remove(t);
                         taskAdapter.notifyDataSetChanged(); //Refresh list
                     }
 
@@ -191,8 +174,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
     public void onResume(){
         super.onResume();
-        ((Spinner)findViewById(R.id.spinner)).setSelection(0);
-        ((Switch)findViewById(R.id.switch1)).setChecked(true);
 
         updateListAfterFilter();
 
